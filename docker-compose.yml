@@ -1,0 +1,78 @@
+version: '3'
+
+services:
+
+  ############################################################################
+  ### AppStore Containers
+  ############################################################################
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    restart: always
+    ports:
+      - 5432
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=idsappstore
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=connectordb
+
+  app-store:
+    container_name: app-store
+    image: ghcr.io/gate-institute/app-store:3.0.0-G1
+    restart: always
+    depends_on:
+      - postgres
+    ports:
+      - ${APP_STORE_PORT}:8080
+#      - 8080:5005
+    volumes:
+      - ./config.json:/config/config.json
+      - ./keystore.p12:/config/keystore.p12
+      - ./keystore_tls.p12:/config/keystore_tls.p12
+      - ./truststore.p12:/config/truststore.p12
+      - ./log4j2.xml:/app/log4j2.xml
+      - app-search-data:/data/search
+    environment:
+      - CONFIGURATION_PATH=/config/config.json
+      - CONFIGURATION_FORCE_RELOAD=true
+
+      - DAPS_URL=https://${IDS_FQDN}
+      - DAPS_TOKEN_URL=https://${IDS_FQDN}/auth/token
+      - DAPS_KEY_URL=https://${IDS_FQDN}/auth/jwks.json
+      - DAPS_INCOMING_DAT_DEFAULT_WELLKNOWN=/jwks.json
+      - DAPS_ENABLE_LOG_JWT=true
+      - DAPS_JWT_SIGNATURE_ALGORITHM=ECDSA256
+
+      - CONFIGURATION_KEYSTOREPASSWORD=${KEYSTORE_PASSWORD}
+
+      - SERVER_SSL_ENABLED=true
+      - SERVER_SSL_KEY-STORE=file:///config/keystore_tls.p12
+      - SERVER_SSL_KEY-STORE-PASSWORD=${TLS_KEYSTORE_PASSWORD}      
+      
+      - SPRING_SECURITY_USER_NAME=admin
+      - SPRING_SECURITY_USER_PASSWORD=${ADMIN_PASSWORD}
+      - SPRING_SECURITY_APP_NAME=app
+      - SPRING_SECURITY_APP_PASSWORD=${APP_PASSWORD}
+
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/connectordb
+      - SPRING_DATASOURCE_USERNAME=idsappstore
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+      - SPRING_DATASOURCE_PLATFORM=postgres
+      - SPRING_DATASOURCE_DRIVERCLASSNAME=org.postgresql.Driver
+      - SPRING_JPA_DATABASEPLATFORM=org.hibernate.dialect.PostgreSQLDialect
+
+      - REGISTRY_HOST=${REGISTRY_FQDN}
+      - REGISTRY_URL=https://${REGISTRY_FQDN}
+      - REGISTRY_PROJECT=${REGISTRY_PROJECT}
+      - REGISTRY_API_URL=https://${REGISTRY_FQDN}/api/v2.0
+      - REGISTRY_CLIENT_USER=admin
+      - REGISTRY_CLIENT_PASSWORD=${HARBOR_PASSWORD}
+
+      - _JAVA_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+
+volumes:
+  pgdata:
+  app-search-data:

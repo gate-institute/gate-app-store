@@ -69,7 +69,7 @@ services:
       - REGISTRY_PROJECT=${REGISTRY_PROJECT}
       - REGISTRY_API_URL=https://${REGISTRY_FQDN}/api/v2.0
       - REGISTRY_CLIENT_USER=admin
-      - REGISTRY_CLIENT_PASSWORD=${HARBOR_PASSWORD}
+      - REGISTRY_CLIENT_PASSWORD=${REGISTRY_CLIENT_PASSWORD}
 
       - _JAVA_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
 
